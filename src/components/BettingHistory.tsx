@@ -26,7 +26,7 @@ const BettingHistory: React.FC<BettingHistoryProps> = ({ history }) => {
             title={`Spin: ${number}`}
           >
             {number}
-            {index < reversedHistory.length - 1 && ","}
+            {index < reversedHistory.length - 1}
           </div>
         ))}
         {history.length === 0 && <div className="text-gray-500 italic text-sm">No spins yet</div>}

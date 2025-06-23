@@ -105,7 +105,16 @@ const RouletteSimulator = () => {
     <div className="bg-white rounded-xl shadow-xl p-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <StatisticsPanel stats={stats} />
+          <StatisticsPanel
+            stats={stats}
+            thresholds={{
+              color: 5,
+              parity: 5,
+              dozen: 3,
+              column: 3,
+              range: 5,
+            }}
+          />
           <div className="mt-6">
             <BetRecommendations bets={bets} stake={stake} />
           </div>
