@@ -1,68 +1,59 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  @apply bg-gray-100 min-h-screen;
+}
+
+/* Stylowanie suwaków */
+input[type="range"] {
+  @apply w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  @apply appearance-none h-4 w-4 rounded-full bg-indigo-600 cursor-pointer;
+}
+
+input[type="range"]:disabled::-webkit-slider-thumb {
+  @apply bg-gray-400;
+}
+
+/* Stylowanie pola liczbowego */
+input[type="number"] {
+  @apply w-full pl-7 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 focus:outline-none focus:border-indigo-500;
+}
+
+/* Stylowanie przycisków */
+button {
+  @apply transition duration-200;
+}
+
+/* Stylowanie dla całej aplikacji */
+#root {
+  @apply container mx-auto px-4 py-8;
+}
+
+/* Nagłówki sekcji */
+h1,
+h2,
+h3 {
+  @apply text-gray-800 font-bold;
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  @apply text-3xl;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+h2 {
+  @apply text-xl;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+h3 {
+  @apply text-lg;
+}
+
+/* Karty */
+.bg-white {
+  @apply transition-all duration-300 hover:shadow-md;
 }
