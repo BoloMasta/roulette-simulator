@@ -13,6 +13,14 @@ interface ControlsProps {
   currentStake: number;
   spinCount: number;
   disabled?: boolean;
+  thresholds: {
+    color: number;
+    parity: number;
+    range: number;
+    dozen: number;
+    column: number;
+  };
+  onThresholdsChange: (t: ControlsProps["thresholds"]) => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -27,6 +35,8 @@ const Controls: React.FC<ControlsProps> = ({
   currentStake,
   spinCount,
   disabled = false,
+  thresholds,
+  onThresholdsChange,
 }) => {
   const [manualInput, setManualInput] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +63,13 @@ const Controls: React.FC<ControlsProps> = ({
     onManualResult(numberValue);
     setManualInput("");
   };
+
+  const handleThresholdChange = (key: keyof typeof thresholds, value: number) => {
+    onThresholdsChange({ ...thresholds, [key]: value });
+  };
+
+  // Create typed threshold keys array
+  const thresholdKeys = Object.keys(thresholds) as Array<keyof typeof thresholds>;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-lg">
@@ -158,6 +175,26 @@ const Controls: React.FC<ControlsProps> = ({
               disabled={disabled}
               className="w-full pl-5 p-1.5 border border-gray-300 rounded text-xs"
             />
+          </div>
+        </div>
+
+        {/* Compact thresholds section */}
+        <div className="mt-4">
+          <h3 className="font-semibold mb-2">Thresholds</h3>
+          <div className="grid grid-cols-3 gap-1">
+            {thresholdKeys.map((key) => (
+              <div key={key} className="flex flex-col">
+                <label className="text-xs text-gray-600 capitalize mb-1">{key}</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={thresholds[key]}
+                  onChange={(e) => handleThresholdChange(key, Number(e.target.value))}
+                  className="border rounded px-0 py-0.5 w-full text-center text-xs"
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>

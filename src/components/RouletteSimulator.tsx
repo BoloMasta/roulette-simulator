@@ -1,5 +1,5 @@
 // src/components/RouletteSimulator.tsx
-import { useState, useEffect, useCallback, useRef, useReducer } from "react";
+import { useEffect, useCallback, useRef, useReducer } from "react";
 import { RouletteAnalyzer } from "../lib/rouletteAnalyzer";
 import Controls from "./Controls";
 import StatisticsPanel from "./StatisticsPanel";
@@ -16,6 +16,13 @@ type SimulatorState = {
   speed: number;
   stake: number;
   spinCount: number;
+  thresholds: {
+    color: number;
+    parity: number;
+    range: number;
+    dozen: number;
+    column: number;
+  };
 };
 
 // Akcje do aktualizacji stanu
@@ -24,7 +31,8 @@ type SimulatorAction =
   | { type: "SET_PLAYING"; isPlaying: boolean }
   | { type: "SET_SPEED"; speed: number }
   | { type: "SET_STAKE"; stake: number }
-  | { type: "SET_SPIN_COUNT"; spinCount: number };
+  | { type: "SET_SPIN_COUNT"; spinCount: number }
+  | { type: "SET_THRESHOLDS"; thresholds: SimulatorState["thresholds"] };
 
 // Reducer do zarządzania stanem
 function simulatorReducer(state: SimulatorState, action: SimulatorAction): SimulatorState {
@@ -51,22 +59,39 @@ function simulatorReducer(state: SimulatorState, action: SimulatorAction): Simul
     case "SET_SPIN_COUNT":
       return { ...state, spinCount: action.spinCount };
 
+    case "SET_THRESHOLDS":
+      return { ...state, thresholds: action.thresholds };
+
     default:
       return state;
   }
 }
 
 const RouletteSimulator = () => {
-  const [analyzer] = useState(() => new RouletteAnalyzer());
   const [state, dispatch] = useReducer(simulatorReducer, {
-    stats: analyzer.getStats(),
+    stats: new RouletteAnalyzer().getStats(),
     bets: [],
     history: [],
     isPlaying: false,
     speed: 1000,
     stake: 10,
     spinCount: 10,
+    thresholds: {
+      color: 5,
+      parity: 5,
+      range: 5,
+      dozen: 3,
+      column: 3,
+    },
   });
+
+  // Twórz analyzer na podstawie thresholds
+  const analyzerRef = useRef<RouletteAnalyzer>(new RouletteAnalyzer(state.thresholds));
+
+  useEffect(() => {
+    analyzerRef.current = new RouletteAnalyzer(state.thresholds);
+    analyzerRef.current.resetStats();
+  }, [state.thresholds]);
 
   const animationRef = useRef<number | null>(null);
   const lastUpdateTime = useRef<number>(0);
@@ -75,15 +100,14 @@ const RouletteSimulator = () => {
 
   const spin = useCallback(() => {
     if (isProcessing.current) return;
-
     isProcessing.current = true;
     const number = Math.floor(Math.random() * 37);
-    analyzer.updateStats(number);
-    const stats = analyzer.getStats();
-    const bets = analyzer.shouldBet();
+    analyzerRef.current.updateStats(number);
+    const stats = analyzerRef.current.getStats();
+    const bets = analyzerRef.current.shouldBet();
     dispatch({ type: "ADD_NUMBER", number, stats, bets });
     isProcessing.current = false;
-  }, [analyzer]);
+  }, []);
 
   const stopSimulation = useCallback(() => {
     dispatch({ type: "SET_PLAYING", isPlaying: false });
@@ -137,12 +161,12 @@ const RouletteSimulator = () => {
       if (state.isPlaying) {
         stopSimulation();
       }
-      analyzer.updateStats(result);
-      const stats = analyzer.getStats();
-      const bets = analyzer.shouldBet();
+      analyzerRef.current.updateStats(result);
+      const stats = analyzerRef.current.getStats();
+      const bets = analyzerRef.current.shouldBet();
       dispatch({ type: "ADD_NUMBER", number: result, stats, bets });
     },
-    [state.isPlaying, stopSimulation, analyzer]
+    [state.isPlaying, stopSimulation, analyzerRef]
   );
 
   const handleSpeedChange = (newSpeed: number) => {
@@ -190,6 +214,10 @@ const RouletteSimulator = () => {
             onStakeChange={handleStakeChange}
             onSpinCountChange={handleSpinCountChange}
             onManualResult={handleManualResult}
+            thresholds={state.thresholds}
+            onThresholdsChange={(newThresholds) =>
+              dispatch({ type: "SET_THRESHOLDS", thresholds: newThresholds })
+            }
             currentSpeed={state.speed}
             currentStake={state.stake}
             spinCount={state.spinCount}
