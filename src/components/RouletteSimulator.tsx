@@ -1,5 +1,5 @@
 // src/components/RouletteSimulator.tsx
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useReducer } from "react";
 import { RouletteAnalyzer } from "../lib/rouletteAnalyzer";
 import Controls from "./Controls";
 import StatisticsPanel from "./StatisticsPanel";
@@ -7,40 +7,86 @@ import BetRecommendations from "./BetRecommendations";
 import BettingHistory from "./BettingHistory";
 import type { Bet, RouletteStats } from "../lib/types";
 
+// Stan symulatora
+type SimulatorState = {
+  stats: RouletteStats;
+  bets: Bet[];
+  history: number[];
+  isPlaying: boolean;
+  speed: number;
+  stake: number;
+  spinCount: number;
+};
+
+// Akcje do aktualizacji stanu
+type SimulatorAction =
+  | { type: "ADD_NUMBER"; number: number; stats: RouletteStats; bets: Bet[] }
+  | { type: "SET_PLAYING"; isPlaying: boolean }
+  | { type: "SET_SPEED"; speed: number }
+  | { type: "SET_STAKE"; stake: number }
+  | { type: "SET_SPIN_COUNT"; spinCount: number };
+
+// Reducer do zarządzania stanem
+function simulatorReducer(state: SimulatorState, action: SimulatorAction): SimulatorState {
+  switch (action.type) {
+    case "ADD_NUMBER": {
+      // Usuwamy wywołanie analyzer.updateStats
+      return {
+        ...state,
+        history: [...state.history, action.number].slice(-100),
+        stats: action.stats, // przekazujemy już zaktualizowane statystyki
+        bets: action.bets, // przekazujemy już zaktualizowane rekomendacje
+      };
+    }
+
+    case "SET_PLAYING":
+      return { ...state, isPlaying: action.isPlaying };
+
+    case "SET_SPEED":
+      return { ...state, speed: action.speed };
+
+    case "SET_STAKE":
+      return { ...state, stake: action.stake };
+
+    case "SET_SPIN_COUNT":
+      return { ...state, spinCount: action.spinCount };
+
+    default:
+      return state;
+  }
+}
+
 const RouletteSimulator = () => {
   const [analyzer] = useState(() => new RouletteAnalyzer());
-  const [stats, setStats] = useState<RouletteStats>(analyzer.getStats());
-  const [bets, setBets] = useState<Bet[]>([]);
-  const [history, setHistory] = useState<number[]>([]);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1000);
-  const [stake, setStake] = useState(10);
-  const [spinCount, setSpinCount] = useState(10); // Nowy stan dla liczby rzutów
+  const [state, dispatch] = useReducer(simulatorReducer, {
+    stats: analyzer.getStats(),
+    bets: [],
+    history: [],
+    isPlaying: false,
+    speed: 1000,
+    stake: 10,
+    spinCount: 10,
+  });
 
-  // Ref do śledzenia stanu animacji
   const animationRef = useRef<number | null>(null);
   const lastUpdateTime = useRef<number>(0);
-  const spinsLeft = useRef<number>(0); // Licznik pozostałych rzutów
+  const spinsLeft = useRef<number>(0);
+  const isProcessing = useRef(false); // Flaga zapobiegająca podwójnemu przetwarzaniu
 
   const spin = useCallback(() => {
+    if (isProcessing.current) return;
+
+    isProcessing.current = true;
     const number = Math.floor(Math.random() * 37);
     analyzer.updateStats(number);
-
-    setHistory((prev) => {
-      const newHistory = [...prev, number];
-      return newHistory.slice(-100);
-    });
-
-    // Aktualizuj stan w requestAnimationFrame dla płynności
-    requestAnimationFrame(() => {
-      setStats({ ...analyzer.getStats() });
-      setBets([...analyzer.shouldBet()]);
-    });
+    const stats = analyzer.getStats();
+    const bets = analyzer.shouldBet();
+    dispatch({ type: "ADD_NUMBER", number, stats, bets });
+    isProcessing.current = false;
   }, [analyzer]);
 
-  // Funkcja do zatrzymania symulacji
   const stopSimulation = useCallback(() => {
-    setIsPlaying(false);
+    dispatch({ type: "SET_PLAYING", isPlaying: false });
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -49,21 +95,19 @@ const RouletteSimulator = () => {
     spinsLeft.current = 0;
   }, []);
 
-  // Efekt dla symulacji
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!state.isPlaying) return;
 
     const animate = (timestamp: number) => {
       if (!lastUpdateTime.current) lastUpdateTime.current = timestamp;
 
       const elapsed = timestamp - lastUpdateTime.current;
 
-      if (elapsed > speed) {
+      if (elapsed > state.speed) {
         spin();
         lastUpdateTime.current = timestamp;
 
-        // Dekrementuj licznik jeśli używamy ograniczonej liczby rzutów
-        if (spinCount > 0) {
+        if (state.spinCount > 0) {
           spinsLeft.current = spinsLeft.current - 1;
           if (spinsLeft.current <= 0) {
             stopSimulation();
@@ -75,9 +119,8 @@ const RouletteSimulator = () => {
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    // Ustaw początkową liczbę rzutów
-    if (spinCount > 0) {
-      spinsLeft.current = spinCount;
+    if (state.spinCount > 0) {
+      spinsLeft.current = state.spinCount;
     }
 
     animationRef.current = requestAnimationFrame(animate);
@@ -87,18 +130,31 @@ const RouletteSimulator = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isPlaying, speed, spin, spinCount, stopSimulation]);
+  }, [state.isPlaying, state.speed, spin, state.spinCount, stopSimulation]);
+
+  const handleManualResult = useCallback(
+    (result: number) => {
+      if (state.isPlaying) {
+        stopSimulation();
+      }
+      analyzer.updateStats(result);
+      const stats = analyzer.getStats();
+      const bets = analyzer.shouldBet();
+      dispatch({ type: "ADD_NUMBER", number: result, stats, bets });
+    },
+    [state.isPlaying, stopSimulation, analyzer]
+  );
 
   const handleSpeedChange = (newSpeed: number) => {
-    setSpeed(newSpeed);
+    dispatch({ type: "SET_SPEED", speed: newSpeed });
   };
 
   const handleStakeChange = (newStake: number) => {
-    setStake(newStake);
+    dispatch({ type: "SET_STAKE", stake: newStake });
   };
 
   const handleSpinCountChange = (count: number) => {
-    setSpinCount(count);
+    dispatch({ type: "SET_SPIN_COUNT", spinCount: count });
   };
 
   return (
@@ -106,7 +162,7 @@ const RouletteSimulator = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <StatisticsPanel
-            stats={stats}
+            stats={state.stats}
             thresholds={{
               color: 5,
               parity: 5,
@@ -116,28 +172,29 @@ const RouletteSimulator = () => {
             }}
           />
           <div className="mt-6">
-            <BetRecommendations bets={bets} stake={stake} />
+            <BetRecommendations bets={state.bets} baseStake={state.stake} />
           </div>
         </div>
         <div className="space-y-6">
           <Controls
-            isPlaying={isPlaying}
+            isPlaying={state.isPlaying}
             onPlayToggle={() => {
-              if (isPlaying) {
+              if (state.isPlaying) {
                 stopSimulation();
               } else {
-                setIsPlaying(true);
+                dispatch({ type: "SET_PLAYING", isPlaying: true });
               }
             }}
             onSingleSpin={spin}
             onSpeedChange={handleSpeedChange}
             onStakeChange={handleStakeChange}
             onSpinCountChange={handleSpinCountChange}
-            currentSpeed={speed}
-            currentStake={stake}
-            spinCount={spinCount}
+            onManualResult={handleManualResult}
+            currentSpeed={state.speed}
+            currentStake={state.stake}
+            spinCount={state.spinCount}
           />
-          <BettingHistory history={history} />
+          <BettingHistory history={state.history} />
         </div>
       </div>
     </div>

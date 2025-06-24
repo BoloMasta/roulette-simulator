@@ -1,5 +1,5 @@
 // src/components/Controls.tsx
-import React from "react";
+import React, { useState } from "react";
 
 interface ControlsProps {
   isPlaying: boolean;
@@ -8,6 +8,7 @@ interface ControlsProps {
   onSpeedChange: (speed: number) => void;
   onStakeChange: (stake: number) => void;
   onSpinCountChange: (count: number) => void;
+  onManualResult: (result: number) => void;
   currentSpeed: number;
   currentStake: number;
   spinCount: number;
@@ -21,20 +22,74 @@ const Controls: React.FC<ControlsProps> = ({
   onSpeedChange,
   onStakeChange,
   onSpinCountChange,
+  onManualResult,
   currentSpeed,
   currentStake,
   spinCount,
   disabled = false,
 }) => {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-lg">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">Controls</h2>
+  const [manualInput, setManualInput] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
-      <div className="space-y-4">
-        <div className="flex gap-3">
+  const handleManualSubmit = () => {
+    setError(null);
+    if (!manualInput.trim()) {
+      setError("Please enter a number");
+      return;
+    }
+
+    const numberValue = parseInt(manualInput, 10);
+
+    if (isNaN(numberValue)) {
+      setError("Invalid number");
+      return;
+    }
+
+    if (numberValue < 0 || numberValue > 36) {
+      setError("Number must be between 0 and 36");
+      return;
+    }
+
+    onManualResult(numberValue);
+    setManualInput("");
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-lg">
+      <h2 className="text-lg font-bold mb-3 text-gray-800">Controls</h2>
+
+      <div className="space-y-3">
+        {/* Sekcja ręcznego wprowadzania */}
+        <div className="p-2 rounded-lg border border-gray-100 bg-blue-50">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Manual Result (0-36)
+          </label>
+          <div className="flex gap-1">
+            <input
+              type="number"
+              min="0"
+              max="36"
+              value={manualInput}
+              onChange={(e) => setManualInput(e.target.value)}
+              disabled={isPlaying || disabled}
+              className="flex-1 p-1.5 border border-gray-300 rounded text-xs"
+              placeholder="Enter number"
+            />
+            <button
+              onClick={handleManualSubmit}
+              disabled={isPlaying || disabled || !manualInput.trim()}
+              className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 text-xs"
+            >
+              Add
+            </button>
+          </div>
+          {error && <div className="text-red-500 text-xs mt-1">{error}</div>}
+        </div>
+
+        <div className="flex gap-2">
           <button
             onClick={onPlayToggle}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold text-white transition ${
+            className={`flex-1 py-2 px-3 rounded font-bold text-white text-sm transition ${
               isPlaying ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
             } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             disabled={disabled}
@@ -45,16 +100,16 @@ const Controls: React.FC<ControlsProps> = ({
           <button
             onClick={onSingleSpin}
             disabled={isPlaying || disabled}
-            className="flex-1 py-3 px-4 bg-blue-500 hover:bg-blue-600 rounded-lg font-bold text-white disabled:opacity-50"
+            className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 rounded font-bold text-white disabled:opacity-50 text-sm"
           >
             Single Spin
           </button>
         </div>
 
-        <div className="p-3 rounded-lg border border-gray-100">
+        <div className="p-2 rounded border border-gray-100">
           <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-medium text-gray-700">Spin Speed</label>
-            <span className="text-xs font-semibold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">
+            <label className="block text-xs font-medium text-gray-700">Speed</label>
+            <span className="text-xs font-semibold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
               {currentSpeed}ms
             </span>
           </div>
@@ -66,14 +121,14 @@ const Controls: React.FC<ControlsProps> = ({
             value={currentSpeed}
             onChange={(e) => onSpeedChange(Number(e.target.value))}
             disabled={disabled}
-            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            className="w-full h-1.5 bg-gray-200 rounded appearance-none cursor-pointer accent-indigo-600"
           />
         </div>
 
-        <div className="p-3 rounded-lg border border-gray-100">
+        <div className="p-2 rounded border border-gray-100">
           <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-medium text-gray-700">Spin Count</label>
-            <span className="text-xs font-semibold bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+            <label className="block text-xs font-medium text-gray-700">Spins</label>
+            <span className="text-xs font-semibold bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
               {spinCount}
             </span>
           </div>
@@ -84,14 +139,14 @@ const Controls: React.FC<ControlsProps> = ({
             value={spinCount}
             onChange={(e) => onSpinCountChange(Number(e.target.value))}
             disabled={disabled}
-            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+            className="w-full h-1.5 bg-gray-200 rounded appearance-none cursor-pointer accent-purple-600"
           />
         </div>
 
-        <div className="p-3 rounded-lg border border-gray-100">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Stake Amount</label>
+        <div className="p-2 rounded border border-gray-100">
+          <label className="block text-xs font-medium text-gray-700 mb-1">Stake</label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-gray-500">
+            <span className="absolute inset-y-0 left-0 pl-1 flex items-center text-gray-500 text-xs">
               $
             </span>
             <input
@@ -101,7 +156,7 @@ const Controls: React.FC<ControlsProps> = ({
               value={currentStake}
               onChange={(e) => onStakeChange(Math.max(1, Number(e.target.value)))}
               disabled={disabled}
-              className="w-full pl-7 p-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full pl-5 p-1.5 border border-gray-300 rounded text-xs"
             />
           </div>
         </div>

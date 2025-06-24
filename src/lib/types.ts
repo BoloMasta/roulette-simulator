@@ -3,11 +3,13 @@ export interface StatItem {
   count: number;
   streak: number;
   maxStreak: number;
+  absenceStreak: number;
 }
 
 export interface Bet {
   type: string;
   value: string;
+  absenceStreak: number;
 }
 
 export interface RouletteStats {
