@@ -76,12 +76,12 @@ const Controls: React.FC<ControlsProps> = ({
       <h2 className="text-lg font-bold mb-3 text-gray-800">Controls</h2>
 
       <div className="space-y-3">
-        {/* Sekcja ręcznego wprowadzania */}
+        {/* Zmieniona sekcja ręcznego wprowadzania */}
         <div className="p-2 rounded-lg border border-gray-100 bg-blue-50">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Manual Result (0-36)
-          </label>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            <label className="block text-xs font-medium text-gray-700 whitespace-nowrap">
+              Manual Result (0-36)
+            </label>
             <input
               type="number"
               min="0"
@@ -95,7 +95,7 @@ const Controls: React.FC<ControlsProps> = ({
             <button
               onClick={handleManualSubmit}
               disabled={isPlaying || disabled || !manualInput.trim()}
-              className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 text-xs"
+              className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 text-xs whitespace-nowrap"
             >
               Add
             </button>
@@ -181,7 +181,7 @@ const Controls: React.FC<ControlsProps> = ({
         {/* Compact thresholds section */}
         <div className="mt-4">
           <h3 className="font-semibold mb-2">Thresholds</h3>
-          <div className="grid grid-cols-3 gap-1">
+          <div className="grid grid-cols-5 gap-1">
             {thresholdKeys.map((key) => (
               <div key={key} className="flex flex-col">
                 <label className="text-xs text-gray-600 capitalize mb-1">{key}</label>
@@ -191,7 +191,7 @@ const Controls: React.FC<ControlsProps> = ({
                   max="20"
                   value={thresholds[key]}
                   onChange={(e) => handleThresholdChange(key, Number(e.target.value))}
-                  className="border rounded px-0 py-0.5 w-full text-center text-xs"
+                  className="border rounded px-0 py-0.5 w-full text-xs"
                 />
               </div>
             ))}

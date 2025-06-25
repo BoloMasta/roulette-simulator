@@ -21,7 +21,7 @@ input[type="range"]:disabled::-webkit-slider-thumb {
 
 /* Stylowanie pola liczbowego */
 input[type="number"] {
-  @apply w-full pl-7 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 focus:outline-none focus:border-indigo-500;
+  @apply w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 focus:outline-none focus:border-indigo-500;
 }
 
 /* Stylowanie przycisków */
