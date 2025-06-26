@@ -19,6 +19,11 @@ interface ControlsProps {
     range: number;
     dozen: number;
     column: number;
+    straight: number;
+    split: number;
+    street: number;
+    corner: number;
+    sixline: number;
   };
   onThresholdsChange: (t: ControlsProps["thresholds"]) => void;
 }

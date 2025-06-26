@@ -22,6 +22,11 @@ type SimulatorState = {
     range: number;
     dozen: number;
     column: number;
+    straight: number;
+    split: number;
+    street: number;
+    corner: number;
+    sixline: number;
   };
 };
 
@@ -77,11 +82,16 @@ const RouletteSimulator = () => {
     stake: 10,
     spinCount: 10,
     thresholds: {
-      color: 5,
-      parity: 5,
-      range: 5,
-      dozen: 3,
-      column: 3,
+      color: 8, // Prawdopodobieństwo: 18/37 ≈ 48.6%
+      parity: 8, // Prawdopodobieństwo: 18/37 ≈ 48.6%
+      range: 8, // Prawdopodobieństwo: 18/37 ≈ 48.6%
+      dozen: 5, // Prawdopodobieństwo: 12/37 ≈ 32.4%
+      column: 5, // Prawdopodobieństwo: 12/37 ≈ 32.4%
+      sixline: 10, // Prawdopodobieństwo: 6/37 ≈ 16.2%
+      corner: 12, // Prawdopodobieństwo: 4/37 ≈ 10.8%
+      street: 14, // Prawdopodobieństwo: 3/37 ≈ 8.1%
+      split: 18, // Prawdopodobieństwo: 2/37 ≈ 5.4%
+      straight: 25, // Prawdopodobieństwo: 1/37 ≈ 2.7%
     },
   });
 
