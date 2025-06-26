@@ -26,6 +26,9 @@ interface ControlsProps {
     sixline: number;
   };
   onThresholdsChange: (t: ControlsProps["thresholds"]) => void;
+  onClear: () => void; // Added clear callback
+  initialBankroll: number; // Add this
+  onBankrollChange: (bankroll: number) => void; // Add this
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -42,6 +45,9 @@ const Controls: React.FC<ControlsProps> = ({
   disabled = false,
   thresholds,
   onThresholdsChange,
+  onClear, // Added clear prop
+  initialBankroll,
+  onBankrollChange,
 }) => {
   const [manualInput, setManualInput] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +79,14 @@ const Controls: React.FC<ControlsProps> = ({
     onThresholdsChange({ ...thresholds, [key]: value });
   };
 
-  // Create typed threshold keys array
+  // Handle clear action
+  const handleClear = () => {
+    // REMOVE bankroll reset here - parent handles this
+    setManualInput("");
+    setError(null);
+    onClear();
+  };
+
   const thresholdKeys = Object.keys(thresholds) as Array<keyof typeof thresholds>;
 
   return (
@@ -81,7 +94,7 @@ const Controls: React.FC<ControlsProps> = ({
       <h2 className="text-lg font-bold mb-3 text-gray-800">Controls</h2>
 
       <div className="space-y-3">
-        {/* Zmieniona sekcja ręcznego wprowadzania */}
+        {/* Manual input section */}
         <div className="p-2 rounded-lg border border-gray-100 bg-blue-50">
           <div className="flex items-center gap-2">
             <label className="block text-xs font-medium text-gray-700 whitespace-nowrap">
@@ -108,10 +121,11 @@ const Controls: React.FC<ControlsProps> = ({
           {error && <div className="text-red-500 text-xs mt-1">{error}</div>}
         </div>
 
-        <div className="flex gap-2">
+        {/* Button group - now with 3 buttons */}
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={onPlayToggle}
-            className={`flex-1 py-2 px-3 rounded font-bold text-white text-sm transition ${
+            className={`py-2 px-3 rounded font-bold text-white text-sm transition ${
               isPlaying ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
             } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             disabled={disabled}
@@ -122,12 +136,22 @@ const Controls: React.FC<ControlsProps> = ({
           <button
             onClick={onSingleSpin}
             disabled={isPlaying || disabled}
-            className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 rounded font-bold text-white disabled:opacity-50 text-sm"
+            className="py-2 px-3 bg-blue-500 hover:bg-blue-600 rounded font-bold text-white disabled:opacity-50 text-sm"
           >
             Single Spin
           </button>
+
+          {/* NEW CLEAR BUTTON */}
+          <button
+            onClick={handleClear}
+            disabled={isPlaying || disabled}
+            className="py-2 px-3 bg-gray-500 hover:bg-gray-600 rounded font-bold text-white disabled:opacity-50 text-sm"
+          >
+            Clear
+          </button>
         </div>
 
+        {/* Speed control with default 100ms */}
         <div className="p-2 rounded border border-gray-100">
           <div className="flex justify-between items-center mb-1">
             <label className="block text-xs font-medium text-gray-700">Speed</label>
@@ -147,6 +171,7 @@ const Controls: React.FC<ControlsProps> = ({
           />
         </div>
 
+        {/* Spin count with default 20 */}
         <div className="p-2 rounded border border-gray-100">
           <div className="flex justify-between items-center mb-1">
             <label className="block text-xs font-medium text-gray-700">Spins</label>
@@ -165,31 +190,54 @@ const Controls: React.FC<ControlsProps> = ({
           />
         </div>
 
-        <div className="p-2 rounded border border-gray-100">
-          <label className="block text-xs font-medium text-gray-700 mb-1">Stake</label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-1 flex items-center text-gray-500 text-xs">
-              $
-            </span>
-            <input
-              type="number"
-              min="1"
-              max="1000"
-              value={currentStake}
-              onChange={(e) => onStakeChange(Math.max(1, Number(e.target.value)))}
-              disabled={disabled}
-              className="w-full pl-5 p-1.5 border border-gray-300 rounded text-xs"
-            />
+        {/* Combined Bankroll and Stake */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-2 rounded border border-gray-100">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Initial Bankroll</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-1 flex items-center text-gray-500 text-xs">
+                $
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                value={initialBankroll} // Use prop instead of state
+                onChange={(e) => onBankrollChange(Math.max(1, Number(e.target.value)))} // Call prop instead of setState
+                disabled={disabled}
+                className="w-full pl-5 p-1.5 border border-gray-300 rounded text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="p-2 rounded border border-gray-100">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Stake</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-1 flex items-center text-gray-500 text-xs">
+                $
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                value={currentStake}
+                onChange={(e) => onStakeChange(Math.max(1, Number(e.target.value)))}
+                disabled={disabled}
+                className="w-full pl-5 p-1.5 border border-gray-300 rounded text-xs"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Compact thresholds section */}
+        {/* Thresholds section */}
         <div className="mt-4">
           <h3 className="font-semibold mb-2">Thresholds</h3>
           <div className="grid grid-cols-5 gap-1">
             {thresholdKeys.map((key) => (
               <div key={key} className="flex flex-col">
-                <label className="text-xs text-gray-600 capitalize mb-1">{key}</label>
+                <label className="text-xs text-gray-600 capitalize mb-1 truncate" title={key}>
+                  {key}
+                </label>
                 <input
                   type="number"
                   min="1"

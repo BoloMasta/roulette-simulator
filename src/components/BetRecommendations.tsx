@@ -4,9 +4,10 @@ import type { Bet } from "../lib/types";
 interface BetRecommendationsProps {
   bets: Bet[];
   baseStake: number;
+  bankroll: number; // Optional bankroll prop for future use
 }
 
-const BetRecommendations: React.FC<BetRecommendationsProps> = ({ bets, baseStake }) => {
+const BetRecommendations: React.FC<BetRecommendationsProps> = ({ bets, baseStake, bankroll }) => {
   const getColorClass = (absenceStreak: number) => {
     return absenceStreak >= 5
       ? "bg-green-100 border-green-300 text-green-800"

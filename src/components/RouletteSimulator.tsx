@@ -28,6 +28,7 @@ type SimulatorState = {
     corner: number;
     sixline: number;
   };
+  initialBankroll: number; // Added
 };
 
 // Akcje do aktualizacji stanu
@@ -37,18 +38,19 @@ type SimulatorAction =
   | { type: "SET_SPEED"; speed: number }
   | { type: "SET_STAKE"; stake: number }
   | { type: "SET_SPIN_COUNT"; spinCount: number }
-  | { type: "SET_THRESHOLDS"; thresholds: SimulatorState["thresholds"] };
+  | { type: "SET_THRESHOLDS"; thresholds: SimulatorState["thresholds"] }
+  | { type: "SET_INITIAL_BANKROLL"; bankroll: number }
+  | { type: "RESET_ALL" };
 
 // Reducer do zarządzania stanem
 function simulatorReducer(state: SimulatorState, action: SimulatorAction): SimulatorState {
   switch (action.type) {
     case "ADD_NUMBER": {
-      // Usuwamy wywołanie analyzer.updateStats
       return {
         ...state,
         history: [...state.history, action.number].slice(-100),
-        stats: action.stats, // przekazujemy już zaktualizowane statystyki
-        bets: action.bets, // przekazujemy już zaktualizowane rekomendacje
+        stats: action.stats,
+        bets: action.bets,
       };
     }
 
@@ -67,6 +69,33 @@ function simulatorReducer(state: SimulatorState, action: SimulatorAction): Simul
     case "SET_THRESHOLDS":
       return { ...state, thresholds: action.thresholds };
 
+    case "SET_INITIAL_BANKROLL": // Added
+      return { ...state, initialBankroll: action.bankroll };
+
+    case "RESET_ALL":
+      return {
+        stats: new RouletteAnalyzer().getStats(),
+        bets: [],
+        history: [],
+        isPlaying: false,
+        speed: 100,
+        stake: 10,
+        spinCount: 20,
+        initialBankroll: 1000,
+        thresholds: {
+          color: 8,
+          parity: 8,
+          range: 8,
+          dozen: 5,
+          column: 5,
+          sixline: 10,
+          corner: 12,
+          street: 14,
+          split: 18,
+          straight: 25,
+        },
+      };
+
     default:
       return state;
   }
@@ -78,20 +107,21 @@ const RouletteSimulator = () => {
     bets: [],
     history: [],
     isPlaying: false,
-    speed: 1000,
+    speed: 100, // Changed default to 100ms
     stake: 10,
-    spinCount: 10,
+    spinCount: 20, // Changed default to 20 spins
+    initialBankroll: 1000, // Added
     thresholds: {
-      color: 8, // Prawdopodobieństwo: 18/37 ≈ 48.6%
-      parity: 8, // Prawdopodobieństwo: 18/37 ≈ 48.6%
-      range: 8, // Prawdopodobieństwo: 18/37 ≈ 48.6%
-      dozen: 5, // Prawdopodobieństwo: 12/37 ≈ 32.4%
-      column: 5, // Prawdopodobieństwo: 12/37 ≈ 32.4%
-      sixline: 10, // Prawdopodobieństwo: 6/37 ≈ 16.2%
-      corner: 12, // Prawdopodobieństwo: 4/37 ≈ 10.8%
-      street: 14, // Prawdopodobieństwo: 3/37 ≈ 8.1%
-      split: 18, // Prawdopodobieństwo: 2/37 ≈ 5.4%
-      straight: 25, // Prawdopodobieństwo: 1/37 ≈ 2.7%
+      color: 8,
+      parity: 8,
+      range: 8,
+      dozen: 5,
+      column: 5,
+      sixline: 10,
+      corner: 12,
+      street: 14,
+      split: 18,
+      straight: 25,
     },
   });
 
@@ -106,7 +136,7 @@ const RouletteSimulator = () => {
   const animationRef = useRef<number | null>(null);
   const lastUpdateTime = useRef<number>(0);
   const spinsLeft = useRef<number>(0);
-  const isProcessing = useRef(false); // Flaga zapobiegająca podwójnemu przetwarzaniu
+  const isProcessing = useRef(false);
 
   const spin = useCallback(() => {
     if (isProcessing.current) return;
@@ -191,22 +221,28 @@ const RouletteSimulator = () => {
     dispatch({ type: "SET_SPIN_COUNT", spinCount: count });
   };
 
+  // Added clear handler
+  const handleClear = useCallback(() => {
+    stopSimulation();
+    dispatch({ type: "RESET_ALL" });
+  }, [stopSimulation]);
+
+  // Added bankroll handler
+  const handleBankrollChange = (bankroll: number) => {
+    dispatch({ type: "SET_INITIAL_BANKROLL", bankroll });
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-xl p-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <StatisticsPanel
-            stats={state.stats}
-            thresholds={{
-              color: 5,
-              parity: 5,
-              dozen: 3,
-              column: 3,
-              range: 5,
-            }}
-          />
+          <StatisticsPanel stats={state.stats} thresholds={state.thresholds} />
           <div className="mt-6">
-            <BetRecommendations bets={state.bets} baseStake={state.stake} />
+            <BetRecommendations
+              bets={state.bets}
+              baseStake={state.stake}
+              bankroll={state.initialBankroll} // Pass bankroll to recommendations
+            />
           </div>
         </div>
         <div className="space-y-6">
@@ -231,6 +267,9 @@ const RouletteSimulator = () => {
             currentSpeed={state.speed}
             currentStake={state.stake}
             spinCount={state.spinCount}
+            onClear={handleClear} // Added
+            onBankrollChange={handleBankrollChange} // Added
+            initialBankroll={state.initialBankroll} // Added
           />
           <BettingHistory history={state.history} />
         </div>
